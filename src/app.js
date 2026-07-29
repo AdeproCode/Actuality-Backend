@@ -41,6 +41,13 @@ const commentRoutes = require('./routes/commentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 // Mount routes
+app.get('/api', (req, res) => {
+  res.json({
+    message:
+      'Welcome to the Actuality API. Your number one source for credible civic reporting.',
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/reports/:reportId/comments', commentRoutes);
