@@ -33,12 +33,40 @@ exports.protect = async (req, res, next) => {
     } catch (error) {
         console.error('Auth Error:', error);
         
-        // Clear invalid cookie
-        res.clearCookie('token');
+        // ✅ Only clear cookie if it's a specific error type
+        // Don't clear for all errors - this fixes the logout issue
+        if (error.name === 'JsonWebTokenError') {
+            // Invalid token - clear it
+            res.clearCookie('token', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+                path: '/'
+            });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token'
+            });
+        }
         
+        if (error.name === 'TokenExpiredError') {
+            // Token expired - clear it
+            res.clearCookie('token', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+                path: '/'
+            });
+            return res.status(401).json({
+                success: false,
+                message: 'Token expired'
+            });
+        }
+        
+        // ✅ For other errors, don't clear cookie
         return res.status(401).json({
             success: false,
-            message: 'Not authorized, invalid token'
+            message: 'Not authorized'
         });
     }
 };

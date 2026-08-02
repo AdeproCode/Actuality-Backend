@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const { 
     getAIResponse, 
     analyzeReport, 
@@ -7,11 +8,40 @@ const {
     CATEGORIES 
 } = require('../services/aiService');
 const { protect } = require('../middleware/auth');
+const User = require('../models/User');
 
 const router = express.Router();
 
+// ✅ Helper to refresh token
+const refreshToken = (req, res) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) return null;
+        
+        const decoded = jwt.verify(token, process.env.COOKIE_SECRET);
+        const newToken = jwt.sign(
+            { id: decoded.id, role: decoded.role },
+            process.env.COOKIE_SECRET,
+            { expiresIn: process.env.SESSION_EXPIRE || '7d' }
+        );
+        
+        res.cookie('token', newToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/'
+        });
+        
+        return newToken;
+    } catch (error) {
+        console.error('Token refresh error:', error);
+        return null;
+    }
+};
+
 // ============================================
-// AI CHAT ENDPOINT
+// AI CHAT ENDPOINT - With refresh
 // ============================================
 
 router.post('/chat', protect, async (req, res) => {
@@ -24,6 +54,9 @@ router.post('/chat', protect, async (req, res) => {
                 message: 'Message is required'
             });
         }
+
+        // ✅ Refresh token on successful AI request
+        refreshToken(req, res);
 
         const response = await getAIResponse(message, conversationHistory);
 
@@ -41,7 +74,7 @@ router.post('/chat', protect, async (req, res) => {
 });
 
 // ============================================
-// ANALYZE REPORT ENDPOINT
+// ANALYZE REPORT ENDPOINT - With refresh
 // ============================================
 
 router.post('/analyze', protect, async (req, res) => {
@@ -54,6 +87,9 @@ router.post('/analyze', protect, async (req, res) => {
                 message: 'Title and description are required'
             });
         }
+
+        // ✅ Refresh token on successful AI request
+        refreshToken(req, res);
 
         const analysis = await analyzeReport(title, description, category);
 
