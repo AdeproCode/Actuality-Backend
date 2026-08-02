@@ -39,6 +39,7 @@ const authRoutes = require('./routes/authRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 // Mount routes
 app.get('/api', (req, res) => {
@@ -52,6 +53,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/reports/:reportId/comments', commentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ai', aiRoutes); // ✅ Add this
+
 
 // Health check route
 app.get('/health', (req, res) => {
