@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
-const { cookieOptions } = require('../middleware/cookieConfig');
+const { getCookieOptions } = require('../middleware/cookieConfig');
 
 // Generate JWT token
 const generateToken = (user) => {
@@ -12,9 +12,10 @@ const generateToken = (user) => {
     );
 };
 
-// Set cookie helper
+// Set cookie helper with proper options
 const setAuthCookie = (res, token) => {
-    res.cookie('token', token, cookieOptions);
+    const options = getCookieOptions();
+    res.cookie('token', token, options);
 };
 
 // Clear cookie helper
@@ -205,6 +206,7 @@ exports.checkAuth = async (req, res) => {
             });
         }
 
+        // Verify token
         const decoded = jwt.verify(token, process.env.COOKIE_SECRET);
         const user = await User.findById(decoded.id).select('-password');
 
@@ -214,6 +216,11 @@ exports.checkAuth = async (req, res) => {
                 isAuthenticated: false
             });
         }
+
+        // ✅ Refresh token on every auth check to keep session alive
+        // This extends the session expiration
+        const newToken = generateToken(user);
+        setAuthCookie(res, newToken);
 
         res.status(200).json({
             success: true,
@@ -227,6 +234,10 @@ exports.checkAuth = async (req, res) => {
         });
 
     } catch (error) {
+        // If token is expired, clear it
+        if (error.name === 'TokenExpiredError') {
+            clearAuthCookie(res);
+        }
         res.status(200).json({
             success: true,
             isAuthenticated: false
