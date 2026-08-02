@@ -206,38 +206,47 @@ exports.checkAuth = async (req, res) => {
             });
         }
 
-        // Verify token
-        const decoded = jwt.verify(token, process.env.COOKIE_SECRET);
-        const user = await User.findById(decoded.id).select('-password');
+        try {
+            const decoded = jwt.verify(token, process.env.COOKIE_SECRET);
+            const user = await User.findById(decoded.id).select('-password');
 
-        if (!user) {
+            if (!user) {
+                // ✅ Clear invalid cookie
+                clearAuthCookie(res);
+                return res.status(200).json({
+                    success: true,
+                    isAuthenticated: false
+                });
+            }
+
+            // ✅ Refresh token to extend session
+            const newToken = generateToken(user);
+            setAuthCookie(res, newToken);
+
+            res.status(200).json({
+                success: true,
+                isAuthenticated: true,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                }
+            });
+
+        } catch (tokenError) {
+            // ✅ Token expired or invalid - clear it
+            if (tokenError.name === 'TokenExpiredError' || tokenError.name === 'JsonWebTokenError') {
+                clearAuthCookie(res);
+            }
             return res.status(200).json({
                 success: true,
                 isAuthenticated: false
             });
         }
 
-        // ✅ Refresh token on every auth check to keep session alive
-        // This extends the session expiration
-        const newToken = generateToken(user);
-        setAuthCookie(res, newToken);
-
-        res.status(200).json({
-            success: true,
-            isAuthenticated: true,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
-        });
-
     } catch (error) {
-        // If token is expired, clear it
-        if (error.name === 'TokenExpiredError') {
-            clearAuthCookie(res);
-        }
+        console.error('Check Auth Error:', error);
         res.status(200).json({
             success: true,
             isAuthenticated: false

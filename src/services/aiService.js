@@ -54,6 +54,8 @@ if (AI_PROVIDER === 'openai' && OPENAI_API_KEY) {
     geminiClient = new GoogleGenerativeAI(GEMINI_API_KEY);
 }
 
+
+
 // ============================================
 // AI FUNCTIONS
 // ============================================
@@ -61,7 +63,16 @@ if (AI_PROVIDER === 'openai' && OPENAI_API_KEY) {
 /**
  * Get response from AI provider
  */
+
+console.log('🔐 AI Service loaded with provider:', process.env.AI_PROVIDER);
+
+// In getAIResponse function
 const getAIResponse = async (prompt, conversationHistory = []) => {
+    console.log('🤖 AI Request received:', { 
+        promptLength: prompt.length, 
+        historyLength: conversationHistory.length,
+        provider: AI_PROVIDER 
+    });
     const systemPrompt = `You are a helpful civic reporting assistant for Actuality.ng, a Nigerian civic tech platform.
 Your role is to help citizens report civic issues in their community.
 
