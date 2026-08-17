@@ -4,7 +4,7 @@ const User = require('../models/User');
 // Verify cookie and extract user
 exports.protect = async (req, res, next) => {
     try {
-        // ✅ Get token from cookie (works for both dev and prod)
+        // Get token from cookie
         const token = req.cookies.token;
 
         if (!token) {
@@ -33,19 +33,40 @@ exports.protect = async (req, res, next) => {
     } catch (error) {
         console.error('Auth Error:', error);
         
-        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-            // ✅ Clear cookie for invalid/expired token
+        // ✅ Only clear cookie for specific error types
+        if (error.name === 'JsonWebTokenError') {
+            // Invalid token - clear it
             res.clearCookie('token', {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                 path: '/'
             });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token'
+            });
         }
         
+        if (error.name === 'TokenExpiredError') {
+            // Token expired - clear it
+            res.clearCookie('token', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                path: '/'
+            });
+            return res.status(401).json({
+                success: false,
+                message: 'Token expired'
+            });
+        }
+        
+        // ✅ For other errors, DON'T clear cookie
+        // Just return unauthorized without clearing
         return res.status(401).json({
             success: false,
-            message: error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token'
+            message: 'Authentication failed'
         });
     }
 };

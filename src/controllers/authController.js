@@ -206,6 +206,7 @@ exports.getMe = async (req, res) => {
 // @desc    Check if user is authenticated
 // @route   GET /api/auth/check
 // @access  Public
+
 exports.checkAuth = async (req, res) => {
     try {
         const token = req.cookies.token;
@@ -250,6 +251,7 @@ exports.checkAuth = async (req, res) => {
             if (tokenError.name === 'TokenExpiredError' || tokenError.name === 'JsonWebTokenError') {
                 clearAuthCookie(res);
             }
+            // ✅ Always return 200 with isAuthenticated: false
             return res.status(200).json({
                 success: true,
                 isAuthenticated: false
