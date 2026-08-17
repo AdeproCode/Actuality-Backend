@@ -102,7 +102,6 @@ exports.login = async (req, res) => {
 
         const { email, password } = req.body;
 
-        // Check if user exists
         const user = await User.findOne({ email }).select('+password');
 
         if (!user) {
@@ -113,7 +112,6 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Check password
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
@@ -135,21 +133,19 @@ exports.login = async (req, res) => {
         console.log('🔒 Secure flag:', isProduction);
         console.log('🍪 SameSite:', isProduction ? 'none' : 'lax');
 
+        // ✅ IMPORTANT: Set cookie BEFORE sending response
         res.cookie('token', token, {
             httpOnly: true,
             secure: isProduction,
             sameSite: isProduction ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/',
-            // ✅ For production, don't set domain unless needed
-            // domain: isProduction ? '.onrender.com' : undefined
         });
 
+        // ✅ Log that cookie was set
         console.log('🍪 Cookie set successfully');
 
-        // ✅ Log the Set-Cookie header
-        console.log('📝 Set-Cookie header will be:', res.getHeaders()['set-cookie']);
-
+        // ✅ Send response
         res.status(200).json({
             success: true,
             user: {

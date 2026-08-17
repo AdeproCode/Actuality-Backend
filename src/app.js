@@ -18,16 +18,19 @@ app.use(helmet({
 
 app.set('trust proxy', 1);
 
-// ✅ CORS configuration
 const corsOptions = {
     origin: process.env.FRONTEND_URL || 'https://actuality-frontend.onrender.com',
-    credentials: true, // ✅ Required for cookies
+    credentials: true, // ✅ CRITICAL: Must be true for cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
-    exposedHeaders: ['Set-Cookie'], // ✅ Allow Set-Cookie header
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Cookie'],
+    exposedHeaders: ['Set-Cookie'], // ✅ Allow frontend to read Set-Cookie
 };
 
 app.use(cors(corsOptions));
+
+// ✅ Log CORS settings
+console.log('🌐 CORS Origin:', corsOptions.origin);
+console.log('🔒 Credentials:', corsOptions.credentials);
 
 // Cookie parser (must come before routes)
 app.use(cookieParser());
