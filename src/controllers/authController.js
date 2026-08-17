@@ -122,30 +122,38 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Generate token
         const token = generateToken(user);
-        console.log('✅ Token generated for:', email);
-        console.log('🔑 Token:', token.substring(0, 30) + '...');
+        console.log('✅ Token generated:', token.substring(0, 30) + '...');
 
-        // ✅ Set cookie with explicit options
+        // ✅ Set cookie with explicit options for cross-origin
         const isProduction = process.env.NODE_ENV === 'production';
-        console.log('🌐 Environment:', process.env.NODE_ENV);
-        console.log('🔒 Secure flag:', isProduction);
-        console.log('🍪 SameSite:', isProduction ? 'none' : 'lax');
+        const origin = req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:3000';
+        
+        console.log('🌐 Origin:', origin);
+        console.log('🔒 Secure:', isProduction);
 
-        // ✅ IMPORTANT: Set cookie BEFORE sending response
-        res.cookie('token', token, {
+        // ✅ Cookie options
+        const cookieOptions = {
             httpOnly: true,
-            secure: isProduction,
+            secure: isProduction, // false for localhost
             sameSite: isProduction ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/',
-        });
+            // ✅ DO NOT set domain for cross-origin to work properly
+        };
 
-        // ✅ Log that cookie was set
+        console.log('🍪 Cookie options:', cookieOptions);
+
+        // ✅ Set cookie
+        res.cookie('token', token, cookieOptions);
+
         console.log('🍪 Cookie set successfully');
 
-        // ✅ Send response
+        // ✅ Set CORS headers explicitly
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+
         res.status(200).json({
             success: true,
             user: {
