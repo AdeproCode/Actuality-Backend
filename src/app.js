@@ -16,12 +16,15 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// ✅ CORS configuration for cookie-based auth
+app.set('trust proxy', 1);
+
+// ✅ CORS configuration
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'https://actuality-frontend.onrender.com',
     credentials: true, // ✅ Required for cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+    exposedHeaders: ['Set-Cookie'], // ✅ Allow Set-Cookie header
 };
 
 app.use(cors(corsOptions));

@@ -90,6 +90,8 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
     try {
+        console.log('🔐 Login attempt:', req.body.email);
+        
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({
@@ -100,42 +102,53 @@ exports.login = async (req, res) => {
 
         const { email, password } = req.body;
 
+        // Check if user exists
         const user = await User.findOne({ email }).select('+password');
 
         if (!user) {
+            console.log('❌ User not found:', email);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
         }
 
+        // Check password
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
+            console.log('❌ Invalid password for:', email);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
         }
 
+        // Generate token
         const token = generateToken(user);
+        console.log('✅ Token generated for:', email);
+        console.log('🔑 Token:', token.substring(0, 30) + '...');
 
-        // ✅ Set cookie with production-friendly settings
+        // ✅ Set cookie with explicit options
         const isProduction = process.env.NODE_ENV === 'production';
-        
+        console.log('🌐 Environment:', process.env.NODE_ENV);
+        console.log('🔒 Secure flag:', isProduction);
+        console.log('🍪 SameSite:', isProduction ? 'none' : 'lax');
+
         res.cookie('token', token, {
             httpOnly: true,
-            secure: isProduction, // ✅ True for production (HTTPS)
-            sameSite: isProduction ? 'none' : 'lax', // ✅ 'none' for cross-site
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            path: '/',
-        });
-
-        console.log('🍪 Cookie set:', {
             secure: isProduction,
             sameSite: isProduction ? 'none' : 'lax',
-            environment: process.env.NODE_ENV
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/',
+            // ✅ For production, don't set domain unless needed
+            // domain: isProduction ? '.onrender.com' : undefined
         });
+
+        console.log('🍪 Cookie set successfully');
+
+        // ✅ Log the Set-Cookie header
+        console.log('📝 Set-Cookie header will be:', res.getHeaders()['set-cookie']);
 
         res.status(200).json({
             success: true,
