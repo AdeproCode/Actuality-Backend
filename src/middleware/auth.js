@@ -33,37 +33,28 @@ exports.protect = async (req, res, next) => {
     } catch (error) {
         console.error('Auth Error:', error);
         
-        // ✅ Only clear cookie for specific error types
-        if (error.name === 'JsonWebTokenError') {
-            // Invalid token - clear it
+        // ✅ ONLY clear cookie for specific JWT errors
+        // This prevents random clearing on other errors
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
             res.clearCookie('token', {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                 path: '/'
             });
+            
+            const message = error.name === 'TokenExpiredError' 
+                ? 'Token expired' 
+                : 'Invalid token';
+            
             return res.status(401).json({
                 success: false,
-                message: 'Invalid token'
+                message: message
             });
         }
         
-        if (error.name === 'TokenExpiredError') {
-            // Token expired - clear it
-            res.clearCookie('token', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-                path: '/'
-            });
-            return res.status(401).json({
-                success: false,
-                message: 'Token expired'
-            });
-        }
-        
-        // ✅ For other errors, DON'T clear cookie
-        // Just return unauthorized without clearing
+        // ✅ For other errors (like database errors), DON'T clear cookie
+        // Just return unauthorized
         return res.status(401).json({
             success: false,
             message: 'Authentication failed'

@@ -15,6 +15,14 @@ exports.createReport = async (req, res) => {
             tags
         } = req.body;
 
+        // ✅ Check if user exists on request
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
+
         // Check if location is provided
         if (!location || !location.coordinates) {
             return res.status(400).json({
