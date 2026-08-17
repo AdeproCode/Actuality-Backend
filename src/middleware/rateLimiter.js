@@ -22,5 +22,3 @@ exports.strictLimiter = rateLimit({
         message: 'Too many attempts, please try again later.'
     }
 });
-
-const rateLimit = require('express-rate-limit');
