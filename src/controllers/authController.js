@@ -20,11 +20,11 @@ const setAuthCookie = (res, token) => {
 
 // Clear cookie helper
 const clearAuthCookie = (res) => {
+    const options = getCookieOptions();
+
     res.clearCookie('token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-        path: '/'
+        ...options,
+        maxAge: undefined
     });
 };
 
@@ -91,8 +91,9 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         console.log('🔐 Login attempt:', req.body.email);
-        
+
         const errors = validationResult(req);
+
         if (!errors.isEmpty()) {
             return res.status(400).json({
                 success: false,
@@ -106,16 +107,19 @@ exports.login = async (req, res) => {
 
         if (!user) {
             console.log('❌ User not found:', email);
+
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
         }
 
-        const isPasswordMatch = await user.comparePassword(password);
+        const isPasswordMatch =
+            await user.comparePassword(password);
 
         if (!isPasswordMatch) {
             console.log('❌ Invalid password for:', email);
+
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
@@ -123,38 +127,15 @@ exports.login = async (req, res) => {
         }
 
         const token = generateToken(user);
-        console.log('✅ Token generated:', token.substring(0, 30) + '...');
 
-        // ✅ Set cookie with explicit options for cross-origin
-        const isProduction = process.env.NODE_ENV === 'production';
-        const origin = req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:3000';
-        
-        console.log('🌐 Origin:', origin);
-        console.log('🔒 Secure:', isProduction);
+        console.log('✅ Token generated');
 
-        // ✅ Cookie options
-        const cookieOptions = {
-            httpOnly: true,
-            secure: isProduction, // false for localhost
-            sameSite: isProduction ? 'none' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            path: '/',
-            // ✅ DO NOT set domain for cross-origin to work properly
-        };
+        // Set HttpOnly authentication cookie
+        setAuthCookie(res, token);
 
-        console.log('🍪 Cookie options:', cookieOptions);
+        console.log('🍪 Authentication cookie set');
 
-        // ✅ Set cookie
-        res.cookie('token', token, cookieOptions);
-
-        console.log('🍪 Cookie set successfully');
-
-        // ✅ Set CORS headers explicitly
-        res.header('Access-Control-Allow-Origin', origin);
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
-
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             user: {
                 id: user._id,
@@ -165,8 +146,9 @@ exports.login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Login Error:', error);
-        res.status(500).json({
+        console.error('❌ Login Error:', error);
+
+        return res.status(500).json({
             success: false,
             message: 'Server error during login'
         });

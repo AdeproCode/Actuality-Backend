@@ -18,35 +18,57 @@ app.use(helmet({
 
 app.set('trust proxy', 1);
 
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  'https://actuality.vercel.app',
-  "https://www.actuality.ng",
-  'http://localhost:3000',
-];
-
 // ✅ CORS configuration - MUST be EXACTLY correct
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    'https://actuality.vercel.app',
+    'https://www.actuality.ng',
+    'http://localhost:3000',
+].filter(Boolean);
+
 const corsOptions = {
-    origin: allowedOrigins,
-    credentials: true, // ✅ MUST be true
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
-    exposedHeaders: ['Set-Cookie'], // ✅ Allow frontend to read Set-Cookie
+    origin: (origin, callback) => {
+        // Allow requests without an origin
+        // such as server-to-server requests
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        console.log('❌ CORS blocked:', origin);
+
+        return callback(
+            new Error(`CORS blocked for origin: ${origin}`)
+        );
+    },
+
+    credentials: true,
+
+    methods: [
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE',
+        'PATCH',
+        'OPTIONS'
+    ],
+
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-CSRF-Token'
+    ]
 };
-app.use(cookieParser());
 
 app.use(cors(corsOptions));
 
-// ✅ Add this BEFORE your routes
-app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
+app.options('*', cors(corsOptions));
 
-// ✅ Add logging middleware to see what's happening
-app.use((req, res, next) => {
-    console.log('📝 Request Origin:', req.headers.origin);
-    console.log('📝 Request Method:', req.method);
-    console.log('📝 Request URL:', req.url);
-    next();
-});
+app.use(cookieParser());
+
 
 // Rate limiting
 app.use(limiter);

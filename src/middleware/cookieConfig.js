@@ -1,29 +1,20 @@
-// Cookie configuration
+// middleware/cookieConfig.js
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 const cookieOptions = {
     httpOnly: true,
-    secure: true, // ✅ Always true for production
-    sameSite: 'none', // ✅ Required for cross-site cookies (different domains)
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/',
-};
-
-// ✅ For development
-const developmentCookieOptions = {
-    httpOnly: true,
-    secure: false, // ✅ Must be false for localhost
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
 };
 
-const getCookieOptions = () => {
-    return process.env.NODE_ENV === 'production' 
-        ? cookieOptions 
-        : developmentCookieOptions;
-};
+const getCookieOptions = () => ({
+    ...cookieOptions,
+});
 
 module.exports = {
     cookieOptions,
-    developmentCookieOptions,
     getCookieOptions,
 };
