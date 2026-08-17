@@ -16,13 +16,15 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration for cookie-based auth
-app.use(cors({
+// ✅ CORS configuration for cookie-based auth
+const corsOptions = {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
+    credentials: true, // ✅ Required for cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+};
+
+app.use(cors(corsOptions));
 
 // Cookie parser (must come before routes)
 app.use(cookieParser());
@@ -53,8 +55,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/reports/:reportId/comments', commentRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/ai', aiRoutes); // ✅ Add this
-
+app.use('/api/ai', aiRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

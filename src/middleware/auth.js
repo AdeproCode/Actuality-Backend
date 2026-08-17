@@ -4,7 +4,7 @@ const User = require('../models/User');
 // Verify cookie and extract user
 exports.protect = async (req, res, next) => {
     try {
-        // Get token from cookie
+        // ✅ Get token from cookie (works for both dev and prod)
         const token = req.cookies.token;
 
         if (!token) {
@@ -33,40 +33,19 @@ exports.protect = async (req, res, next) => {
     } catch (error) {
         console.error('Auth Error:', error);
         
-        // ✅ Only clear cookie if it's a specific error type
-        // Don't clear for all errors - this fixes the logout issue
-        if (error.name === 'JsonWebTokenError') {
-            // Invalid token - clear it
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            // ✅ Clear cookie for invalid/expired token
             res.clearCookie('token', {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                 path: '/'
-            });
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token'
             });
         }
         
-        if (error.name === 'TokenExpiredError') {
-            // Token expired - clear it
-            res.clearCookie('token', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-                path: '/'
-            });
-            return res.status(401).json({
-                success: false,
-                message: 'Token expired'
-            });
-        }
-        
-        // ✅ For other errors, don't clear cookie
         return res.status(401).json({
             success: false,
-            message: 'Not authorized'
+            message: error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token'
         });
     }
 };

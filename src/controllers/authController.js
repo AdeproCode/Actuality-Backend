@@ -100,7 +100,6 @@ exports.login = async (req, res) => {
 
         const { email, password } = req.body;
 
-        // Check if user exists with password
         const user = await User.findOne({ email }).select('+password');
 
         if (!user) {
@@ -110,7 +109,6 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Check password
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
@@ -120,11 +118,24 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Generate token
         const token = generateToken(user);
 
-        // Set cookie
-        setAuthCookie(res, token);
+        // ✅ Set cookie with production-friendly settings
+        const isProduction = process.env.NODE_ENV === 'production';
+        
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: isProduction, // ✅ True for production (HTTPS)
+            sameSite: isProduction ? 'none' : 'lax', // ✅ 'none' for cross-site
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/',
+        });
+
+        console.log('🍪 Cookie set:', {
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            environment: process.env.NODE_ENV
+        });
 
         res.status(200).json({
             success: true,
