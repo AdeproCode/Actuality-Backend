@@ -21,7 +21,7 @@ app.set('trust proxy', 1);
 // ✅ CORS configuration - MUST be EXACTLY correct
 const allowedOrigins = [
     process.env.CLIENT_URL,
-    'https://actuality.vercel.app',
+    'https://actualityng.vercel.app',
     'https://www.actuality.ng',
     'http://localhost:3000',
 ].filter(Boolean);
